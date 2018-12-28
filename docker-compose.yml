@@ -99,10 +99,8 @@ services:
       LISTEN_ADDR: "0.0.0.0:8080"
       BOLT_PATH: "/data/bot.db"
       STORE: "bolt"
-      TELEGRAM_ADMIN: '38304574'
-      TELEGRAM_TOKEN: "779673369:AAHUK66Jcl4Wd6Ss-n2FAk6gIensJ1pWoQk"
-#      TELEGRAM_ADMIN: '12345678'
-#      TELEGRAM_TOKEN: "TELEGRAM_TOKEN_LONG_HASH_STRING"
+      TELEGRAM_ADMIN: '12345678'
+      TELEGRAM_TOKEN: "TELEGRAM_TOKEN_LONG_HASH_STRING"
       TEMPLATE_PATHS: "/templates/default.tmpl"
     volumes:
       - "./alertmanager-bot/data:/data"

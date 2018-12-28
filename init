@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+docker network create monitoring \
+	-d bridge \
+	--scope local \
+	--attachable \
+	--label com.docker.compose.network=monitoring
+
 echo "Set up monitoring service with domain name: "${1}
 
 echo "DOMAIN="${1} > ./.env

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+echo "Set up monitoring service with domain name: "${1}
+
+echo "DOMAIN="${1} > ./.env
+
+docker-compose down && docker-compose up -d

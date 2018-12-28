@@ -1,0 +1,9 @@
+global:
+  resolve_timeout: 5m
+route:
+  receiver: 'alertmananger-bot'
+receivers:
+- name: 'alertmananger-bot'
+  webhook_configs:
+  - send_resolved: true
+    url: 'http://alertmanager-bot:8080'

@@ -1,0 +1,81 @@
+etag                off;
+
+# gzip
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 6;
+gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml;
+
+
+proxy_buffering on;
+proxy_buffers 256 4k;
+proxy_busy_buffers_size 4k;
+proxy_read_timeout 60s;
+proxy_send_timeout 60s;
+proxy_max_temp_file_size 1024m;
+proxy_temp_file_write_size 4k;
+
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";
+proxy_set_header Host $host;
+
+proxy_set_header X-Original-Host $http_host;
+proxy_set_header X-Original-Scheme $scheme;
+proxy_set_header X-Forwarded-For $remote_addr;
+
+
+client_max_body_size 32m;
+client_body_buffer_size 16k;
+
+server {
+    listen  80 default_server;
+    server_name grafana.${DOMAIN};
+    # grafana proxy
+    location / {
+        proxy_pass http://grafana:3000;
+    }
+}
+
+server {
+    listen  80;
+    server_name node-exporter.${DOMAIN};
+    location / {
+        #proxy_pass http://${DOCKER_HOST_IP}:9100;
+        proxy_pass http://node-exporter:9100;
+    }
+}
+
+server {
+    listen  80;
+    server_name prometheus.${DOMAIN};
+    location / {
+        proxy_pass http://prometheus:9090;
+    }
+}
+
+server {
+    listen  80;
+    server_name alertmanager.${DOMAIN};
+    location / {
+        proxy_pass http://alertmanager:9093;
+    }
+}
+
+server {
+    listen  80;
+    listen  8889;
+    server_name alertmanager-bot.${DOMAIN};
+    location / {
+        proxy_pass http://alertmanager-bot:8080;
+    }
+}
+
+server {
+    listen  80;
+    server_name cadvisor.${DOMAIN};
+    location / {
+        proxy_pass http://cadvisor:8080;
+    }
+}

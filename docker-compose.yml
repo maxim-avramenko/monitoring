@@ -1,0 +1,139 @@
+version: "3.6"
+services:
+
+  prometheus:
+    image: "prom/prometheus:latest"
+    container_name: "prometheus"
+    restart: "always"
+    volumes:
+      - "./prometheus:/etc/prometheus"
+      - "prometheus_data:/prometheus"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - '--storage.tsdb.retention=200h'
+      - '--web.enable-lifecycle'
+    expose:
+      - "9090"
+    labels:
+      - "traefik.frontend.rule=Host:prometheus.${DOMAIN}"
+
+  node-exporter:
+    image: "quay.io/prometheus/node-exporter:latest"
+    container_name: "node-exporter"
+    restart: "always"
+    hostname: "node-exporter.${DOMAIN}"
+    pid: "host"
+    volumes:
+      - "/proc:/host/proc:ro"
+      - "/sys:/host/sys:ro"
+      - "/:/rootfs:ro"
+    expose:
+      - "9100"
+    command:
+      - "--collector.tcpstat"
+      - "--collector.diskstats"
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+#      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs/systemd)($$|/)"
+    labels:
+      - "traefik.frontend.rule=Host:node-exporter.${DOMAIN}"
+
+  grafana:
+    image: "grafana/grafana:latest"
+    container_name: "grafana"
+    user: root
+    expose:
+      - "3000"
+    volumes:
+      - "grafana_data:/var/lib/grafana"
+      - "./grafana/provisioning/:/etc/grafana/provisioning/"
+    env_file:
+      - "./grafana/.env"
+    restart: always
+    labels:
+      - "traefik.frontend.rule=Host:grafana.${DOMAIN}"
+
+  cadvisor:
+    image: "google/cadvisor:latest"
+    container_name: "cadvisor"
+    user: root
+    pid: "host"
+    restart: "always"
+    expose:
+      - "8080"
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:rw"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+      - "/dev/disk/:/dev/disk:ro"
+    labels:
+      - "traefik.backend=cadvisor"
+      - "traefik.frontend.rule=Host:cadvisor.${DOMAIN}"
+
+  alertmanager:
+    image: "prom/alertmanager:latest"
+    container_name: "alertmanager"
+    expose:
+      - "9093"
+    volumes:
+      - "./alertmanager/:/etc/alertmanager/"
+      - "alertmanager_data:/alertmanager"
+    restart: always
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    labels:
+      - "traefik.frontend.rule=Host:alertmanager.${DOMAIN}"
+
+  alertmanager-bot:
+    image: "metalmatze/alertmanager-bot:0.3.1"
+    container_name: "alertmanager-bot"
+    environment:
+      ALERTMANAGER_URL: "http://alertmanager:9093"
+      LISTEN_ADDR: "0.0.0.0:8080"
+      BOLT_PATH: "/data/bot.db"
+      STORE: "bolt"
+      TELEGRAM_ADMIN: '38304574'
+      TELEGRAM_TOKEN: "779673369:AAHUK66Jcl4Wd6Ss-n2FAk6gIensJ1pWoQk"
+#      TELEGRAM_ADMIN: '12345678'
+#      TELEGRAM_TOKEN: "TELEGRAM_TOKEN_LONG_HASH_STRING"
+      TEMPLATE_PATHS: "/templates/default.tmpl"
+    volumes:
+      - "./alertmanager-bot/data:/data"
+    restart: always
+    labels:
+      - "traefik.frontend.rule=Host:alertmanager-bot.${DOMAIN}"
+    expose:
+      - "8080"
+#    user: "${USER}"
+
+  grafana-web:
+    image: "mcsim/openresty:base"
+    container_name: "grafana-web"
+    restart: always
+    volumes:
+      - "./openresty/conf.d:/etc/nginx/conf.d/templates"
+      - "./openresty/lua:/lua"
+    expose:
+      - "80"
+    environment:
+      - "DOMAIN=${DOMAIN}"
+      - "RESOLVER=127.0.0.11"
+      - "DOCKER_HOST_IP=172.17.0.1"
+    labels:
+      - "traefik.frontend.rule=Host:grafana.${DOMAIN},node-exporter.${DOMAIN},prometheus.${DOMAIN},alertmanager.${DOMAIN},cadvisor.${DOMAIN},prometheus.${DOMAIN}"
+    command: /bin/bash -c "envsubst '$${DOMAIN} $${RESOLVER} $${DOCKER_HOST_IP}' < /etc/nginx/conf.d/templates/monitoring.template > /etc/nginx/conf.d/default.conf && /usr/local/openresty/bin/openresty -g 'daemon off;'"
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+    alertmanager_data: {}
+networks:
+  default:
+    external:
+      name: monitoring

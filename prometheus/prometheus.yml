@@ -1,0 +1,64 @@
+global:
+  scrape_interval: "15s"    # By default, scrape targets every 15 seconds.
+  scrape_timeout: "10s"     # How long until a scrape request times out.
+  evaluation_interval: "1m" # How frequently to evaluate rules.
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: 'living-monitor'
+
+# Rule files specifies a list of globs. Rules and alerts are read from
+# all matching files.
+rule_files:
+   - 'alert.rules'
+  # - "first.rules"
+  # - "second.rules"
+
+# Alerting specifies settings related to the Alertmanager.
+alerting:
+#  alert_relabel_configs:
+#     - <relabel_config> ...
+  alertmanagers:
+  - scheme: "http"
+    static_configs:
+    - targets:
+        - "alertmanager:9093"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+# The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+    honor_labels: true
+    # Override the global default and scrape targets from this job every 5 seconds.
+    scrape_interval: "15s"
+#    metrics_path: "/metrics"
+#    scheme: "http"
+    static_configs:
+    - targets: ['localhost:9090']
+
+# Scrape the Node Exporter every 15 seconds.
+  - job_name: 'node-exporter'
+    scrape_interval: "15s"
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Scrape the cAdvisor every 15 seconds.
+  - job_name: 'cadvisor'
+    scrape_interval: "15s"
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+# Scrape the alertmanager every 15 seconds.
+  - job_name: 'alertmanager'
+    scrape_interval: "15s"
+    static_configs:
+      - targets: ['alertmanager:9093']
+
+
+# Scrape the alertmanager every 15 seconds.
+  - job_name: 'alertmanager-bot'
+    scrape_interval: "15s"
+    static_configs:
+      - targets: ['alertmanager-bot:8080']

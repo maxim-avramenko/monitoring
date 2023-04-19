@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.6"
 services:
 
   prometheus:
@@ -39,10 +39,10 @@ services:
     command:
       - "--collector.tcpstat"
       - "--collector.diskstats"
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-#      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
-      - --collector.filesystem.ignored-mount-points
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+#      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
+      - "--collector.filesystem.ignored-mount-points"
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs/systemd)($$|/)"
     labels:
       - "traefik.frontend.rule=Host:node-exporter.${DOMAIN}"
@@ -65,7 +65,8 @@ services:
       - "traefik.frontend.rule=Host:grafana.${DOMAIN}"
 
   cadvisor:
-    image: "google/cadvisor:latest"
+#    image: "google/cadvisor:latest"
+    image: "gcr.io/cadvisor/cadvisor"
     container_name: "cadvisor"
     networks:
       - "monitoring"
